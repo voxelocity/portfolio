@@ -6,9 +6,11 @@
 <title>Ewan McCorkell</title>
 <meta name="description" content="Computer science projects by Ewan McCorkell.">
 <link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/joshpuckett/allo@v1.0.3/allo.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500..900&family=Space+Mono:wght@700&family=VT323&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 <style>
   :root {
     --orange: #ff6a00;
@@ -24,7 +26,8 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     height: 100%; background: var(--orange); color: var(--ink);
-    font-family: "Archivo", "Arial Black", sans-serif; font-weight: 800;
+    font-family: "Allo", system-ui, sans-serif; font-weight: 800;
+    font-variation-settings: "ROND" 35;   /* Allo's roundness axis: a touch sharper than its default 50 */
     overflow: hidden; overscroll-behavior: none; -webkit-font-smoothing: antialiased;
   }
   a { color: inherit; text-decoration: none; }
@@ -34,9 +37,30 @@
 
   /* ---------- name ---------- */
   .side { position: relative; z-index: 1; padding: var(--gutter); width: 50%; }
-  .name { font-size: clamp(40px, 6.2vw, 124px); font-weight: 900; font-stretch: 112%; letter-spacing: -.04em; line-height: .86; }
+  .name { font-size: clamp(40px, 6.2vw, 124px); font-weight: 900; letter-spacing: -.04em; line-height: .86; }
   .gh { display: inline-block; margin-top: 1.4em; font-size: clamp(12px, .95vw, 15px); font-weight: 700; letter-spacing: .03em; text-transform: uppercase; border-bottom: 2px solid var(--ink); padding-bottom: 2px; }
   .gh:hover { background: var(--ink); color: var(--orange); }
+
+  /* ---------- nav: bare icons, top right; the selected one gets bolder ---------- */
+  .nav { position: fixed; z-index: 20; top: var(--gutter); right: var(--gutter); display: flex; gap: 22px; }
+  .nav button {
+    width: 56px; height: 56px; padding: 0; border: 0; background: transparent; color: var(--ink); cursor: pointer;
+    font: 600 32px/1 "Allo", system-ui, sans-serif; font-variation-settings: "ROND" 35;
+    display: grid; place-items: center;
+    transition: font-weight .18s ease-out;
+  }
+  .nav button span { display: block; pointer-events: none; letter-spacing: -.06em; white-space: nowrap; }
+  .nav button.hot, .nav button:focus-visible { font-weight: 900; outline: none; }
+
+
+  /* the label that follows the cursor */
+  .toast {
+    position: fixed; z-index: 30; left: 0; top: 0; pointer-events: none;
+    padding: 7px 11px; border-radius: 9px; background: var(--ink); color: var(--white);
+    font: 700 14px/1 "Allo", system-ui, sans-serif; font-variation-settings: "ROND" 35; letter-spacing: .01em; white-space: nowrap;
+    opacity: 0; transition: opacity .16s ease-out;   /* just fades in place: nothing moves while it appears */
+  }
+  .toast.on { opacity: 1; }
 
   /* ---------- list: a 3D drum on the right ---------- */
   .viewport {
@@ -58,22 +82,27 @@
   .tw { position: relative; display: inline-block; }
   .title {
     position: relative; z-index: 2; display: inline-block;
-    font-size: clamp(41px, 5.3vw, 112px); font-weight: 900; font-stretch: 108%;
+    font-size: clamp(47px, 6.1vw, 128px); font-weight: 800;
+    -webkit-text-stroke: 0 currentColor;
     letter-spacing: -.035em; line-height: .92; white-space: nowrap;
     transform-origin: 100% 60%;
-    transition: transform .45s var(--ease-back), color .12s, text-shadow .12s;
+    transition: font-weight .18s ease-out, -webkit-text-stroke-width .18s ease-out, transform .45s var(--ease-back), color .12s, text-shadow .12s;
   }
-  .row.on .title { color: var(--t, var(--ink)); text-shadow: .05em .05em 0 var(--ts, var(--white)); transform: rotate(var(--tilt, 0deg)) scale(1.06); }
+  /* 900 is Allo's heaviest weight, so a thin outline in the text colour adds the extra boldness */
+  .row.on .title { font-weight: 900; -webkit-text-stroke: .035em currentColor; }
+  /* archived hover effects: only apply when EFFECTS is switched on (html.fx) */
+  .fx .row.on .title { color: var(--t, var(--ink)); text-shadow: .05em .05em 0 var(--ts, var(--white)); transform: rotate(var(--tilt, 0deg)) scale(1.06); }
 
   .meta {
     position: absolute; z-index: 4; right: 0; top: calc(100% + 4px); max-width: min(92%, 460px);
     padding: 6px 9px; background: var(--ink); color: var(--white);
-    font-size: clamp(12px, .9vw, 15px); font-weight: 600; font-stretch: 100%; line-height: 1.3;
+    font-size: clamp(12px, .9vw, 15px); font-weight: 600; line-height: 1.3;
     opacity: 0; transform: translateY(-8px); transform-origin: 100% 0;
     transition: opacity .12s, transform .4s var(--ease-back); pointer-events: none;
   }
   .meta .lang { font-weight: 800; text-transform: uppercase; letter-spacing: .02em; margin-left: .9em; color: var(--orange); }
-  .row.on .meta { opacity: 1; transform: rotate(var(--tilt, 0deg)); transition-delay: .1s; }
+  .row.on .meta { opacity: 1; transform: none; transition-delay: .1s; }
+  .fx .row.on .meta { transform: rotate(var(--tilt, 0deg)); }
 
   /* ---------- the streak: whips in from the screen's right edge, wraps the title, ends in sharp tongues ---------- */
   .win {
@@ -82,15 +111,15 @@
     translate: 0 -50%; transform-origin: calc(100% - var(--ox, 0px)) 50%; rotate: var(--tilt, 0deg);
     opacity: 0; visibility: hidden; transition: opacity .12s, visibility 0s .12s;
   }
-  .row.on .win { opacity: 1; visibility: visible; transition: opacity .03s; }
+  .fx .row.on .win { opacity: 1; visibility: visible; transition: opacity .03s; }
   .win canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .win .tag { position: absolute; z-index: 2; left: 2%; top: 4%; padding: 6px 9px; background: var(--ink); color: var(--white); font: 700 11px/1.2 "Space Mono", monospace; letter-spacing: .08em; text-transform: uppercase; rotate: -4deg; white-space: nowrap; box-shadow: 4px 4px 0 var(--white); }
+  .win .tag { position: absolute; z-index: 2; left: 2%; top: 4%; padding: 6px 9px; background: var(--ink); color: var(--white); font: 700 11px/1.2 "Allo", system-ui, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: .08em; text-transform: uppercase; rotate: -4deg; white-space: nowrap; box-shadow: 4px 4px 0 var(--white); }
 
   .row[data-motif="bytes"] .title .txt { position: relative; }
-  .row[data-motif="bytes"].on .title .txt::before,
-  .row[data-motif="bytes"].on .title .txt::after { content: attr(data-text); position: absolute; left: 0; top: 0; text-shadow: none; }
-  .row[data-motif="bytes"].on .title .txt::before { color: var(--cyan); animation: g-a 1.1s steps(1) infinite; }
-  .row[data-motif="bytes"].on .title .txt::after { color: var(--pink); animation: g-b .9s steps(1) infinite; }
+  .fx .row[data-motif="bytes"].on .title .txt::before,
+  .fx .row[data-motif="bytes"].on .title .txt::after { content: attr(data-text); position: absolute; left: 0; top: 0; text-shadow: none; }
+  .fx .row[data-motif="bytes"].on .title .txt::before { color: var(--cyan); animation: g-a 1.1s steps(1) infinite; }
+  .fx .row[data-motif="bytes"].on .title .txt::after { color: var(--pink); animation: g-b .9s steps(1) infinite; }
   @keyframes g-a { 0% { clip-path: inset(10% 0 70% 0); transform: translateX(-8px); } 20% { clip-path: inset(55% 0 25% 0); transform: translateX(10px); } 40% { clip-path: inset(80% 0 4% 0); transform: translateX(-4px); } 60% { clip-path: inset(30% 0 52% 0); transform: translateX(6px); } 80% { clip-path: inset(0 0 100% 0); } }
   @keyframes g-b { 0% { clip-path: inset(62% 0 18% 0); transform: translateX(9px); } 25% { clip-path: inset(0 0 100% 0); } 50% { clip-path: inset(20% 0 66% 0); transform: translateX(-11px); } 75% { clip-path: inset(42% 0 40% 0); transform: translateX(4px); } }
 
@@ -100,7 +129,9 @@
     .gh { margin-top: 1em; }
     .viewport { top: 150px; }
     .list { left: 0; padding: 0 var(--gutter); }
-    .title { font-size: clamp(39px, 11.5vw, 69px); }
+    .title { font-size: clamp(44px, 13vw, 79px); }
+    .nav { flex-direction: column; gap: 14px; }
+    .nav button { width: 48px; height: 48px; font-size: 28px; }
   }
   @media (prefers-reduced-motion: reduce) {
     .row .title, .row .title * { animation: none !important; transition: none !important; }
@@ -109,6 +140,15 @@
 </head>
 <body>
 <canvas id="logo" role="img" aria-label="Ewan McCorkell logo"></canvas>
+
+<!-- icons are Allo glyphs; the pages themselves aren't built yet -->
+<nav class="nav" id="nav" aria-label="Site">
+  <button type="button" data-label="Work" aria-label="Work"><span aria-hidden="true">&lt;/&gt;</span></button>
+  <button type="button" data-label="About" aria-label="About"><span aria-hidden="true">?</span></button>
+  <button type="button" data-label="Résumé" aria-label="Résumé"><span aria-hidden="true">CV</span></button>
+  <button type="button" data-label="Contact" aria-label="Contact"><span aria-hidden="true">@</span></button>
+</nav>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <filter id="vblur" x="-5%" y="-10%" width="110%" height="120%" color-interpolation-filters="sRGB">
@@ -316,9 +356,9 @@
           x.fillStyle = "#0c0e0d"; x.beginPath(); x.roundRect(14, 16, 64, 64, 18); x.fill();
           if (!(done && tl > DONE + .05)) sparky(x, 46, 74, 50, { y: 0, sx: 1, sy: 1, r: 0 }, 1, col === "#F3F5F4" ? "#3BE37A" : col, done ? "happy" : n.eyes);
           x.fillStyle = INK; x.textBaseline = "alphabetic";
-          x.font = '800 12px "Archivo", sans-serif'; x.fillText(done ? "WYRD · just now" : "WYRD · now", 92, 30);
-          x.font = '900 21px "Archivo", sans-serif'; x.fillText(done ? "Done: Shower" : n.title, 92, 56, CW - 104);
-          x.font = '600 14px "Archivo", sans-serif'; x.fillText(done ? "That's today handled. See you tomorrow." : n.body, 92, 78, CW - 104);
+          x.font = '800 12px "Allo", sans-serif'; x.fillText(done ? "WYRD · just now" : "WYRD · now", 92, 30);
+          x.font = '900 21px "Allo", sans-serif'; x.fillText(done ? "Done: Shower" : n.title, 92, 56, CW - 104);
+          x.font = '600 14px "Allo", sans-serif'; x.fillText(done ? "That's today handled. See you tomorrow." : n.body, 92, 78, CW - 104);
         }
         x.restore();
         // the real action buttons hang off the front card once it's escalated, and Done gets pressed
@@ -330,7 +370,7 @@
             x.save(); x.translate(cx + off + bw / 2, by + 22); x.scale(easeBack(ba) * k, easeBack(ba) * k); x.translate(-bw / 2, -22);
             x.fillStyle = INK; x.beginPath(); x.roundRect(6, 7, bw, 44, 22); x.fill();
             x.fillStyle = bc; x.beginPath(); x.roundRect(0, 0, bw, 44, 22); x.fill(); x.lineWidth = 3; x.strokeStyle = INK; x.stroke();
-            x.fillStyle = INK; x.font = '900 17px "Archivo", sans-serif'; x.textAlign = "center"; x.fillText(lab, bw / 2, 28); x.textAlign = "left";
+            x.fillStyle = INK; x.font = '900 17px "Allo", sans-serif'; x.textAlign = "center"; x.fillText(lab, bw / 2, 28); x.textAlign = "left";
             x.restore();
           });
         }
@@ -919,8 +959,8 @@ void main() {
     const fs = parseFloat(getComputedStyle(title).fontSize);
     const c = document.createElement("canvas"); c.width = Math.ceil(s.W); c.height = Math.ceil(s.H);
     const x = c.getContext("2d", { willReadFrequently: true });
-    x.font = `900 ${fs}px Archivo, "Arial Black", sans-serif`;
-    try { x.fontStretch = "semi-expanded"; x.letterSpacing = (-.035 * fs) + "px"; } catch (e) { /* older canvas: close enough */ }
+    x.font = `900 ${fs}px Allo, system-ui, sans-serif`;
+    try { x.letterSpacing = (-.035 * fs) + "px"; } catch (e) { /* older canvas: close enough */ }
     x.textAlign = "right"; x.textBaseline = "middle"; x.fillStyle = "#000";
     x.fillText(title.textContent, s.tr, s.cy + fs * .04);
     const d = x.getImageData(0, 0, c.width, c.height).data, pts = [];
@@ -929,6 +969,9 @@ void main() {
     return pts.length ? pts : [[(s.tx + s.tr) / 2, s.cy]];
   }
 
+  // The per-project hover effects are archived, not deleted: flip this to true to bring them (and the tilt) back.
+  const EFFECTS = false;
+  document.documentElement.classList.toggle("fx", EFFECTS);
   let splat = null;
   function startSplat(row) {
     const win = row.querySelector(".win"), d = DEFS[row.dataset.motif], title = row.querySelector(".title");
@@ -966,7 +1009,7 @@ void main() {
     if (active) active.classList.remove("on");
     active = row; splat = null;
     list.classList.toggle("has-on", !!row);
-    if (row) { row.classList.add("on"); splat = startSplat(row); }
+    if (row) { row.classList.add("on"); if (EFFECTS) splat = startSplat(row); }
   };
 
   /* ---------- tactile scroll on a 3D drum: smoothed, rubber-banded, snapping, motion-blurred ---------- */
@@ -1122,12 +1165,52 @@ void main() {
 
     // a streak that throws must never take the scroll and logo down with it
     if (splat) { try { frameSplat(splat, now); } catch (err) { console.error(err); splat = null; } }
+    navTick(dt);
 
     // logo: stays still; only redrawn when the layout changes
     if (dirty) { drawLogo(); dirty = false; }
 
     requestAnimationFrame(frame);
   };
+
+  /* ---------- nav: icon buttons, with a label that sits beside the cursor ---------- */
+  const navBtns = [...document.querySelectorAll("#nav button")].map(el => ({ el }));
+  const toast = document.getElementById("toast");
+  let mx = -999, my = -999, tX = 0, tY = 0, toastFor = null, toastMode = "cursor", toastTimer = 0, hot = null;
+  const showToast = (btn, mode) => {
+    clearTimeout(toastTimer);
+    toastFor = btn; toastMode = mode;
+    if (toast.textContent !== btn.dataset.label) toast.textContent = btn.dataset.label;
+    toast.classList.add("on");
+  };
+  const hideToast = () => { toast.classList.remove("on"); toastFor = null; };
+  addEventListener("pointermove", (e) => { if (e.pointerType === "mouse") { mx = e.clientX; my = e.clientY; } });
+  document.documentElement.addEventListener("pointerleave", () => { mx = my = -999; });
+  navBtns.forEach(({ el }) => {
+    el.addEventListener("focus", () => { if (el.matches(":focus-visible")) showToast(el, "button"); });
+    el.addEventListener("blur", () => { if (toastMode === "button") hideToast(); });
+    el.addEventListener("pointerdown", (e) => {   // touch has no hover: show the label under the button for a moment
+      if (e.pointerType === "mouse") return;
+      showToast(el, "button"); toastTimer = setTimeout(hideToast, 1300);
+    });
+  });
+  function navTick(dt) {
+    // which button the pointer is over
+    let over = null;
+    for (const b of navBtns) { const r = b.el.getBoundingClientRect(); if (mx >= r.left && mx <= r.right && my >= r.top && my <= r.bottom) over = b.el; }
+    if (over !== hot) { if (hot) hot.classList.remove("hot"); hot = over; if (hot) hot.classList.add("hot"); }
+    if (hot) showToast(hot, "cursor"); else if (toastFor && toastMode === "cursor") hideToast();
+    // the toast sits beside the cursor, flipping to its left near the right edge of the screen
+    let gx, gy;
+    if (toastFor && toastMode === "button") { const r = toastFor.getBoundingClientRect(); gx = r.right - toast.offsetWidth; gy = r.bottom + 10; }
+    else {
+      // pinned to the pointer, so it only ever moves when the hand does
+      const w = toast.offsetWidth, flip = mx + 16 + w > innerWidth - 8;
+      gx = flip ? mx - 12 - w : mx + 16; gy = my + 20;
+    }
+    tX = gx; tY = gy;
+    toast.style.transform = `translate(${tX.toFixed(1)}px, ${tY.toFixed(1)}px)`;
+  }
 
   const onResize = () => { measure(); layoutLogo(); };
   addEventListener("resize", onResize);
