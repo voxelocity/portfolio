@@ -30,8 +30,7 @@
   a { color: inherit; text-decoration: none; }
   ::selection { background: var(--ink); color: var(--orange); }
 
-  #logo { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; pointer-events: none; z-index: 0; }
-  .page { position: relative; z-index: 1; height: 100vh; height: 100dvh; }
+  #logo { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; pointer-events: none; z-index: 0; }  .page { position: relative; z-index: 1; height: 100vh; height: 100dvh; }
 
   /* ---------- name ---------- */
   .side { position: relative; z-index: 1; padding: var(--gutter); width: 50%; }
@@ -1050,20 +1049,21 @@ void main() {
   /* ---------- logo: big in the corner, turned by the scroll like a dial ---------- */
   const cvs = document.getElementById("logo"), ctx = cvs.getContext("2d");
   const img = new Image(); img.src = "logo.png";
-  let sprite = null, angle = -8, spin = 0, dirty = true, lx = 0, ly = 0;
+  let sprite = null, angle = 45, spin = 0, dirty = true, lx = 0, ly = 0, lsize = 0;
+  const LOGO_TINT = "#f26400";   // a shade darker than the page orange (#ff6a00)
 
+  // the logo sits behind everything as a faint watermark, turned 45° and pushed into the bottom-left corner
   const layoutLogo = () => {
     const W = innerWidth, H = cvs.getBoundingClientRect().height || innerHeight;
     cvs.width = Math.round(W * DPR); cvs.height = Math.round(H * DPR);
-    let s, x, y;
-    if (W > 820) { const col = W * .5; s = Math.min(col * 1.3, H * .8); x = col * .32; y = H - s * .44; }
-    else { s = Math.min(W * .56, 300); x = W - s * .14; y = s * .2; }
-    lx = x * DPR; ly = y * DPR;
+    const s = Math.max(W, H) * 1.05;
+    lx = W * .2 * DPR; ly = H * .8 * DPR; lsize = s * DPR;
     if (img.complete && img.naturalWidth) {
       sprite = document.createElement("canvas");
-      sprite.width = sprite.height = Math.round(s * DPR);
+      sprite.width = sprite.height = Math.round(Math.min(lsize, 2400));   // keep the bitmap a sensible size
       const c = sprite.getContext("2d"); c.imageSmoothingQuality = "high";
       c.drawImage(img, 0, 0, sprite.width, sprite.height);
+      c.globalCompositeOperation = "source-in"; c.fillStyle = LOGO_TINT; c.fillRect(0, 0, sprite.width, sprite.height);
     }
     dirty = true;
   };
@@ -1073,7 +1073,7 @@ void main() {
     if (!sprite) return;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, cvs.width, cvs.height);
-    const half = sprite.width / 2;
+    const half = lsize / 2;
     const sweep = reduced ? 0 : spin * 2.2;
     const n = Math.max(1, Math.min(22, Math.ceil(Math.abs(sweep) * 2.6)));
     ctx.globalCompositeOperation = n > 1 ? "lighter" : "source-over";
@@ -1081,7 +1081,7 @@ void main() {
     for (let i = 0; i < n; i++) {
       const a = (angle - sweep * (n === 1 ? 0 : i / (n - 1))) * Math.PI / 180;
       ctx.setTransform(Math.cos(a), Math.sin(a), -Math.sin(a), Math.cos(a), lx, ly);
-      ctx.drawImage(sprite, -half, -half);
+      ctx.drawImage(sprite, -half, -half, lsize, lsize);
     }
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
   };
@@ -1123,12 +1123,8 @@ void main() {
     // a streak that throws must never take the scroll and logo down with it
     if (splat) { try { frameSplat(splat, now); } catch (err) { console.error(err); splat = null; } }
 
-    // logo: geared to the scroll, with a little weight, stopping a beat after the list does
-    const want = clamp(vel * .09, -3.2, 3.2);
-    spin += (want - spin) * (1 - Math.pow(1 - .13, dt));
-    if (Math.abs(spin) < .004 && Math.abs(want) < .004) spin = 0;
-    angle = (angle + spin * dt) % 360;
-    if (spin !== 0 || dirty) { drawLogo(); dirty = false; }
+    // logo: stays still; only redrawn when the layout changes
+    if (dirty) { drawLogo(); dirty = false; }
 
     requestAnimationFrame(frame);
   };
