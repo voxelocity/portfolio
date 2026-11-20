@@ -1036,10 +1036,11 @@ void main() {
   document.documentElement.addEventListener("pointerleave", () => { pointerIn = false; setActive(null); });
   const pick = () => {
     if (!pointerIn) return;
+    // only the title text itself counts as a hover, not the empty space across the rest of the row
     let hit = null;
     for (const r of rows) {
-      const b = r.getBoundingClientRect();
-      if (py >= b.top && py < b.bottom && px >= b.left - 40 && px <= b.right) { hit = r; break; }
+      const b = r.querySelector(".title").getBoundingClientRect(), P = 6;
+      if (py >= b.top - P && py < b.bottom + P && px >= b.left - P && px <= b.right + P) { hit = r; break; }
     }
     setActive(hit);
   };
